@@ -206,6 +206,8 @@
     transform: translateX(4px);
   }
   .choice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .choice-btn.on-cooldown { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .choice-btn .cb-icon { font-size: 20px; width: 24px; text-align: center; }
   .choice-btn .cb-cost { color: var(--purple); font-size: 17px; margin-left: auto; }
 
@@ -452,6 +454,9 @@
       <div id="combatlog"></div>
 
       <div id="choices"></div>
+      <div id="cooldown-bar-wrap" style="height:4px;background:#0a0a14;overflow:hidden;display:none;">
+        <div id="cooldown-bar-fill" style="height:100%;background:linear-gradient(90deg,#a08020,#f0c040);width:100%;transition:none;"></div>
+      </div>
     </div>
 
     <!-- SIDEBAR -->
@@ -676,7 +681,54 @@ function addNarrative(html) {
   $('narrative').innerHTML += html;
   $('narrative').scrollTop = $('narrative').scrollHeight;
 }
+// ── COOLDOWN SYSTEM ──
+// Combat actions: 1.2s cooldown. Story choices: 0.6s (just enough to prevent double-click).
+let cooldownActive = false;
+let cooldownTimer = null;
+
+const COOLDOWN_COMBAT = 1200; // ms
+const COOLDOWN_STORY  = 600;  // ms
+
+function isCombatAction(action) {
+  return action && action.startsWith('combat_');
+}
+
+function startCooldown(ms) {
+  if (cooldownActive) return;
+  cooldownActive = true;
+  // Disable all buttons
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    if (!b.disabled) b.classList.add('on-cooldown');
+  });
+  // Animate the drain bar
+  const wrap = $('cooldown-bar-wrap');
+  const fill = $('cooldown-bar-fill');
+  wrap.style.display = 'block';
+  fill.style.transition = 'none';
+  fill.style.width = '100%';
+  // Force reflow so transition starts from 100%
+  fill.getBoundingClientRect();
+  fill.style.transition = `width ${ms}ms linear`;
+  fill.style.width = '0%';
+
+  cooldownTimer = setTimeout(() => {
+    cooldownActive = false;
+    wrap.style.display = 'none';
+    fill.style.transition = 'none';
+    fill.style.width = '100%';
+    // Re-enable buttons (remove cooldown class, keep disabled ones disabled)
+    document.querySelectorAll('.choice-btn.on-cooldown').forEach(b => {
+      b.classList.remove('on-cooldown');
+    });
+  }, ms);
+}
+
 function setChoices(choices) {
+  // Clear any active cooldown when choices are replaced (scene transitions)
+  if (cooldownTimer) { clearTimeout(cooldownTimer); cooldownTimer = null; }
+  cooldownActive = false;
+  $('cooldown-bar-wrap').style.display = 'none';
+  $('cooldown-bar-fill').style.width = '100%';
   const el = $('choices');
   el.innerHTML = '';
   choices.forEach(c => {
@@ -684,7 +736,11 @@ function setChoices(choices) {
     btn.className = 'choice-btn ' + (c.cls || '');
     btn.innerHTML = `<span class="cb-icon">${c.icon||'▶'}</span>${c.text}${c.cost ? `<span class="cb-cost">${c.cost}</span>` : ''}`;
     if (c.disabled) btn.disabled = true;
-    btn.onclick = () => handleAction(c.action, c);
+    btn.onclick = () => {
+      if (cooldownActive) return;
+      startCooldown(isCombatAction(c.action) ? COOLDOWN_COMBAT : COOLDOWN_STORY);
+      handleAction(c.action, c);
+    };
     el.appendChild(btn);
   });
 }
