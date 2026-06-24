@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
-
+  
 <!-- ── Open Graph (Discord, Facebook, LinkedIn, Slack, iMessage, WhatsApp, Telegram) ── -->
 <meta property="og:title" content="rugina.lol Homepage" />
 <meta property="og:description" content="Welcome to rugina.lol - Enjoy your stay." />
@@ -22,8 +21,7 @@
 
 <!-- ── General SEO ── -->
 <meta name="description" content="Welcome to rugina.lol - Enjoy your stay." />
-
-
+  
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,6 +36,7 @@
       height: 100vh;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
     }
 
     .container {
@@ -62,6 +61,24 @@
     a:hover {
       background: #333333;
     }
+
+    .footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+
+    .footer a {
+      all: unset;
+      cursor: pointer;
+      color: #aaaaaa;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -71,6 +88,10 @@
     <a href="/blog">Blog</a>
     <a href="/game">Game</a>
     <a href="/discord">Discord</a>
+  </div>
+
+  <div class="footer">
+    <a href="mailto:support@rugina.lol">support@rugina.lol</a>
   </div>
 </body>
 </html>
