@@ -1,41 +1,194 @@
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-
-<!-- ── Open Graph (Discord, Facebook, LinkedIn, Slack, iMessage, WhatsApp, Telegram) ── -->
-<meta property="og:title" content="The Rugina Blog" />
-<meta property="og:description" content="Blog of rugina.lol Check everyday for updates regarding the website of rugina.lol" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://zsyrup.github.io/blog/index.html" />
-<meta property="og:image" content="https://zsyrup.github.io/blog/preview.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Blog of rugina.lol" />
-<meta property="og:site_name" content="Blog of rugina.lol" />
-
-<!-- ── Twitter / X Card ── -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Blog of rugina.lol" />
-<meta name="twitter:description" content="Blog of rugina.lol Check everyday for updates regarding the website of rugina.lol" />
-<meta name="twitter:image" content="https://zsyrup.github.io/blog/preview.png" />
-<meta name="twitter:image:alt" content="Blog of rugina.lol" />
-
-<!-- ── General SEO ── -->
-<meta name="description" content="Blog of rugina.lol Check everyday for updates regarding the website of rugina.lol" />
-
-
 <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Blog of Rugina</title>
+
+  <!-- ── Open Graph ── -->
+  <meta property="og:title" content="The Rugina Blog" />
+  <meta property="og:description" content="Blog of rugina.lol — check everyday for updates." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://zsyrup.github.io/blog/index.html" />
+  <meta property="og:image" content="https://zsyrup.github.io/blog/preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Blog of rugina.lol" />
+  <meta property="og:site_name" content="Blog of rugina.lol" />
+
+  <!-- ── Twitter / X Card ── -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Blog of rugina.lol" />
+  <meta name="twitter:description" content="Blog of rugina.lol — check everyday for updates." />
+  <meta name="twitter:image" content="https://zsyrup.github.io/blog/preview.png" />
+  <meta name="twitter:image:alt" content="Blog of rugina.lol" />
+
+  <!-- ── SEO ── -->
+  <meta name="description" content="Blog of rugina.lol — check everyday for updates." />
+
+  <style type="text/css">
+    /* === Reset === */
+    body, h1, h2, p, ul, li, td {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* === Base === */
+    body {
+      background-color: #0d0d0d;
+      color: #d4cfbb;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* === Outer wrapper (table for IE6) === */
+    table.wrap {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    td.wrap-inner {
+      padding: 0 20px;
+    }
+    div.container {
+      width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-top: 48px;
+      padding-bottom: 80px;
+    }
+
+    /* === Header === */
+    div.site-header {
+      border-bottom: 1px solid #3a3a3a;
+      padding-bottom: 18px;
+      margin-bottom: 40px;
+    }
+    p.site-label {
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    h1.site-title {
+      font-size: 26px;
+      font-weight: bold;
+      color: #e8e2cc;
+      letter-spacing: 1px;
+    }
+    h1.site-title span.accent {
+      color: #8fbc8f;
+    }
+    p.site-sub {
+      font-size: 12px;
+      color: #555;
+      margin-top: 6px;
+    }
+
+    /* === Entry === */
+    div.entry {
+      margin-bottom: 36px;
+      border-left: 2px solid #2a2a2a;
+      padding-left: 18px;
+    }
+    div.entry:hover {
+      border-left-color: #8fbc8f;
+    }
+    h2.entry-date {
+      font-size: 12px;
+      color: #8fbc8f;
+      letter-spacing: 2px;
+      font-weight: normal;
+      margin-bottom: 6px;
+    }
+    p.entry-text {
+      font-size: 14px;
+      color: #c8c2ae;
+    }
+
+    /* === Blinking cursor (latest entry marker) === */
+    span.cursor {
+      display: inline;
+      color: #8fbc8f;
+      font-weight: bold;
+    }
+
+    /* === Footer === */
+    div.site-footer {
+      border-top: 1px solid #2a2a2a;
+      margin-top: 48px;
+      padding-top: 16px;
+    }
+    p.footer-text {
+      font-size: 11px;
+      color: #444;
+    }
+    a.footer-link {
+      color: #8fbc8f;
+      text-decoration: none;
+    }
+
+    /* === Blink animation (ignored by IE6, that's fine) === */
+    @keyframes blink {
+      0%   { visibility: visible; }
+      49%  { visibility: visible; }
+      50%  { visibility: hidden; }
+      100% { visibility: hidden; }
+    }
+    span.cursor {
+      animation: blink 1s step-end infinite;
+    }
+  </style>
 </head>
-<font size="24"><u>Blog of Rugina - rugina.lol</u></font>
-<p> </p>
-<a href="https://x.com/xyzixyzi">Follow me on X</a>
-<a href="https://discord.gg/wc3n7jVrYx">Join the Discord</a>
+
 <body>
-  <h1>23.06.26</h1>
-  <h2>I made rugina.lol and the email.</h2>
-  <h1> </h1>
-  <h1>24.06.26</h1>
-  <h2>I vibecoded rugina.lol video game "The Mission to save Alexandru".</h2>
-  <h2>I made this blog you are on right now, and the Rugina discord server.</h2>
+
+<table class="wrap" cellpadding="0" cellspacing="0">
+  <tr>
+    <td class="wrap-inner">
+      <div class="container">
+
+        <!-- ═══════════════ HEADER ═══════════════ -->
+        <div class="site-header">
+          <p class="site-label">rugina.lol</p>
+          <h1 class="site-title">The Rugina <span class="accent">Blog</span></h1>
+          <p class="site-sub">Updated whenever something happens. Check back daily.</p>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════
+             HOW TO ADD A NEW ENTRY:
+             Copy one <div class="entry"> block below, paste it
+             at the TOP of the entries section, update the date
+             and text. Remove class="entry latest" from the old
+             latest entry and add it to the new one, then move
+             the <span class="cursor"> to the new entry-date.
+             ═══════════════════════════════════════════════════════ -->
+
+        <!-- ─── LATEST entry (has the blinking cursor) ─── -->
+        <div class="entry latest">
+          <h2 class="entry-date">24.06.26 <span class="cursor">|</span></h2>
+          <p class="entry-text">Vibecoded the rugina.lol video game "The Mission to save Alexandru".</p>
+        </div>
+
+        <!-- ─── Older entries below, newest first ─── -->
+        <div class="entry">
+          <h2 class="entry-date">23.06.26</h2>
+          <p class="entry-text">Made rugina.lol and the email.</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="site-footer">
+          <p class="footer-text">
+            &mdash; <a class="footer-link" href="https://rugina.lol">rugina.lol</a>
+          </p>
+        </div>
+
+      </div>
+    </td>
+  </tr>
+</table>
+
 </body>
 </html>
