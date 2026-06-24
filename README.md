@@ -1,3 +1,4 @@
-# zsyrup.github.io
-alexandru rugina was a master of goon
-car pee they called out thinking it was him
+# rugina.lol website
+alexandru rugina was a master of gooncar pee they called out thinking it was him
+Discord: https://rugina.lol/discord
+
