@@ -58,7 +58,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   /* ── STARS ── */
@@ -82,6 +82,7 @@
   #game {
     position: relative; z-index: 1;
     width: 780px;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -394,6 +395,158 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--black); }
   ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* ── MOBILE STATS TOGGLE BUTTON ── */
+  #mobile-stats-btn {
+    display: none;
+  }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 800px) {
+    body {
+      align-items: flex-start;
+      font-size: 18px;
+    }
+
+    #game {
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    #titlebar {
+      padding: 8px 12px;
+      font-size: 8px;
+    }
+    #titlebar .t-title { font-size: 8px; }
+    #titlebar .t-sub { font-size: 7px; }
+
+    #main {
+      grid-template-columns: 1fr;
+      min-height: unset;
+      border-left: none;
+      border-right: none;
+    }
+
+    /* Sidebar hidden by default on mobile, toggled */
+    #sidebar {
+      display: none;
+      border-top: 2px solid var(--border);
+      flex-direction: row;
+      flex-wrap: wrap;
+      font-size: 16px;
+    }
+    #sidebar.mobile-open {
+      display: flex;
+    }
+    #sidebar .side-panel {
+      flex: 1 1 calc(50% - 1px);
+      min-width: 0;
+    }
+    #sidebar .side-panel:nth-child(2) {
+      border-left: 1px solid var(--border);
+    }
+    #sidebar .side-panel:nth-child(3) {
+      border-top: 2px solid var(--border);
+      flex: 1 1 100%;
+    }
+
+    /* Mobile stats toggle button */
+    #mobile-stats-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--panel);
+      border: none;
+      border-top: 2px solid var(--border);
+      border-bottom: 2px solid var(--border);
+      color: var(--gold-dim);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      padding: 8px 14px;
+      width: 100%;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    #mobile-stats-btn:active {
+      background: #252545;
+    }
+    #mobile-stats-btn .msb-stats {
+      font-family: 'VT323', monospace;
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: 0;
+      display: flex;
+      gap: 10px;
+    }
+    #mobile-stats-btn .msb-arrow {
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    #mobile-stats-btn.open .msb-arrow {
+      transform: rotate(180deg);
+    }
+
+    #scene-art {
+      height: 130px;
+      font-size: 60px;
+    }
+    #scene-art .enemy-sprite { font-size: 54px; }
+
+    #scene {
+      border-right: none;
+    }
+
+    #narrative {
+      font-size: 19px;
+      padding: 12px 14px;
+      min-height: 100px;
+    }
+
+    #choices {
+      padding: 10px 12px;
+      gap: 8px;
+    }
+
+    .choice-btn {
+      font-size: 19px;
+      padding: 12px 14px;
+      min-height: 48px;
+    }
+    .choice-btn .cb-icon { font-size: 19px; }
+    .choice-btn .cb-cost { font-size: 16px; }
+
+    #combatlog {
+      font-size: 16px;
+      max-height: 70px;
+    }
+
+    #enemy-hp-wrap {
+      padding: 6px 12px;
+    }
+    #enemy-name { font-size: 19px; }
+
+    #bottombar {
+      padding: 6px 12px;
+      font-size: 15px;
+    }
+    #bottombar .bb-right { font-size: 6px; }
+
+    #title-screen h1 { font-size: 13px; padding: 0 16px; }
+    #title-screen .t-sub-title { font-size: 21px; padding: 0 16px; text-align: center; }
+    #title-screen .t-hero { font-size: 60px; }
+    #title-screen .start-btn { font-size: 11px; padding: 14px 26px; }
+
+    #endscreen h2 { font-size: 16px; }
+    #endscreen p { font-size: 18px; padding: 0 16px; }
+    #endscreen .end-btn { font-size: 9px; padding: 12px 22px; }
+
+    .stat-label { font-size: 15px; }
+    .stat-val { font-size: 15px; }
+    .bar-label { font-size: 14px; }
+    .inv-item { font-size: 16px; }
+    .quest-obj { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
@@ -505,6 +658,16 @@
       </div>
     </div>
   </div>
+
+  <button id="mobile-stats-btn" onclick="toggleMobileStats()">
+    <span>📊 STATS &amp; QUESTS</span>
+    <span class="msb-stats">
+      <span id="msb-hp">❤️ --</span>
+      <span id="msb-mp">💧 --</span>
+      <span id="msb-gold">💰 --</span>
+    </span>
+    <span class="msb-arrow">▼</span>
+  </button>
 
   <div id="bottombar">
     <div class="bb-left" id="status-msg">Welcome, brave hero.</div>
@@ -755,6 +918,20 @@ function updateStats() {
   $('hp-fill').style.width = Math.max(0, state.hp / state.maxHp * 100) + '%';
   $('mp-fill').style.width = Math.max(0, state.mp / state.maxMp * 100) + '%';
   $('xp-fill').style.width = Math.min(100, state.xp / state.maxXp * 100) + '%';
+  // Update mobile mini-bar
+  const msbHp = $('msb-hp');
+  const msbMp = $('msb-mp');
+  const msbGold = $('msb-gold');
+  if (msbHp) msbHp.textContent = `❤️ ${state.hp}/${state.maxHp}`;
+  if (msbMp) msbMp.textContent = `💧 ${state.mp}/${state.maxMp}`;
+  if (msbGold) msbGold.textContent = `💰 ${state.gold}`;
+}
+
+function toggleMobileStats() {
+  const sidebar = $('sidebar');
+  const btn = $('mobile-stats-btn');
+  sidebar.classList.toggle('mobile-open');
+  btn.classList.toggle('open');
 }
 function updateInventory() {
   const el = $('inventory-list');
