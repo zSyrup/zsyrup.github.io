@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xyzi</title>
+<style>
+:root{
+  --sky1:#2b8fe0; --sky2:#8fd3f7; --sky3:#e6f7ff;
+  --grass1:#6cc12a; --grass2:#2f8a12;
+  --red:#e0153f; --aqua:#27c4f0;
+  --ink:#16405c; --glass:rgba(255,255,255,.55);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:"Segoe UI","Frutiger","Trebuchet MS",Verdana,sans-serif;
+  color:var(--ink); min-height:100vh;
+  background:
+    radial-gradient(ellipse 60% 30% at 20% 12%,rgba(255,255,255,.9),transparent 70%),
+    radial-gradient(ellipse 50% 25% at 80% 28%,rgba(255,255,255,.7),transparent 70%),
+    linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 55%,var(--sky3) 80%);
+  background-attachment:fixed;
+}
+/* grass hill */
+body::after{content:"";position:fixed;left:-10%;right:-10%;bottom:-120px;height:260px;z-index:-1;
+  background:radial-gradient(ellipse at 50% 0%,var(--grass1),var(--grass2) 75%);border-radius:50% 50% 0 0}
+/* floating bubbles */
+.bubble{position:fixed;z-index:-1;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.95),rgba(255,255,255,.25) 35%,rgba(120,210,255,.18) 70%,rgba(255,255,255,.5));
+  box-shadow:inset 0 0 18px rgba(255,255,255,.7),0 4px 20px rgba(0,80,160,.12)}
+.b1{width:180px;height:180px;left:4%;top:38%}
+.b2{width:90px;height:90px;right:6%;top:20%}
+.b3{width:130px;height:130px;right:14%;top:62%}
+.b4{width:50px;height:50px;left:30%;top:80%}
+
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px 80px}
+
+/* glass window */
+.win{background:var(--glass);border:1px solid rgba(255,255,255,.9);border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,60,120,.28),inset 0 1px 0 #fff;backdrop-filter:blur(10px);overflow:hidden}
+.titlebar{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:13px;color:#0d3350;
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(205,225,240,.85) 50%,rgba(185,210,230,.85) 51%,rgba(225,240,250,.9));
+  border-bottom:1px solid rgba(80,130,170,.4)}
+.titlebar .dot{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#7fc4ee 60%,#3a8cc8);border:1px solid #5a8fb5}
+.titlebar .ctl{margin-left:auto;display:flex;gap:4px}
+.titlebar .ctl i{width:22px;height:16px;border-radius:4px;border:1px solid #6a8aa5;background:linear-gradient(#fff,#cfe0ee 50%,#b5cde0 51%,#e5f1fa)}
+.titlebar .ctl i:last-child{background:linear-gradient(#ffb3b3,#e24a4a 50%,#c71f1f 51%,#f08a8a);border-color:#9a2020}
+
+/* banner + header */
+.banner{height:220px;background:url("banner.png") center/cover no-repeat;position:relative}
+.banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.35),transparent 40%,rgba(255,255,255,.2))}
+.head{display:flex;gap:18px;align-items:flex-end;padding:0 22px 16px;margin-top:-64px;position:relative;z-index:1}
+.pfp{width:128px;height:128px;border-radius:50%;object-fit:cover;border:4px solid #fff;
+  box-shadow:0 0 0 2px rgba(39,196,240,.7),0 0 22px rgba(39,196,240,.8),0 8px 18px rgba(0,50,100,.4);background:#fff}
+.head h1{margin:0 0 4px;font-size:2.4rem;font-weight:600;letter-spacing:.5px;color:#fff;
+  text-shadow:0 0 12px rgba(30,150,230,.9),0 2px 3px rgba(0,60,110,.6)}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:.9rem;color:var(--ink);background:rgba(255,255,255,.7);padding:3px 12px 3px 8px;border-radius:99px;border:1px solid #fff}
+.status::before{content:"";width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d9ffb0,#4cc21a 60%,#2a7e0c);box-shadow:0 0 6px #6fe02a}
+
+/* nav tabs */
+nav{display:flex;gap:6px;padding:0 22px;background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.5))}
+nav button{font:inherit;font-size:.98rem;cursor:pointer;padding:9px 24px;margin-top:6px;color:var(--ink);
+  border:1px solid rgba(70,130,175,.6);border-bottom:none;border-radius:10px 10px 0 0;
+  background:linear-gradient(180deg,#fff,#d8ebf8 50%,#c2dcf0 51%,#e4f3fc)}
+nav button:hover{filter:brightness(1.06)}
+nav button[aria-selected="true"]{color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,60,100,.6);
+  background:linear-gradient(180deg,#8fe3ff,#27c4f0 50%,#0aa6dc 51%,#4fd4f8);border-color:#0885b5}
+nav button:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
+
+main{padding:22px;background:rgba(255,255,255,.55);min-height:320px}
+section[hidden]{display:none}
+@media(prefers-reduced-motion:no-preference){section:not([hidden]){animation:tabfade .45s ease both}}
+@keyframes tabfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h2{margin:0 0 12px;font-size:1.35rem;font-weight:600;color:#0d4e7d;text-shadow:0 1px 0 #fff}
+
+.about{display:grid;grid-template-columns:1fr 1.4fr;gap:20px}
+@media(max-width:700px){.about{grid-template-columns:1fr}.head{flex-direction:column;align-items:flex-start}}
+.panel{background:rgba(255,255,255,.75);border:1px solid #fff;border-radius:10px;padding:16px;box-shadow:0 3px 10px rgba(0,70,130,.15),inset 0 1px 0 #fff}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.tags li{padding:3px 12px;border-radius:99px;font-size:.85rem;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);
+  background:linear-gradient(180deg,#ff7a95,var(--red) 50%,#b80f31 51%,#ff4d6f);border:1px solid #a50d2c}
+.post{padding:12px 0;border-bottom:1px dashed rgba(60,130,180,.4)}
+.post:last-child{border:none}
+.post h3{margin:0;font-size:1.05rem}
+.post time{font-size:.8rem;color:#4b7a99}
+.post p{margin:6px 0 0;line-height:1.5}
+
+/* photography */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.photo{margin:0;padding:6px 6px 0;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,60,110,.3);cursor:pointer;border:1px solid #cfe3f2}
+.photo img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:4px}
+.photo figcaption{padding:7px 2px;font-size:.85rem}
+.empty{padding:30px;text-align:center}
+#lightbox{position:fixed;inset:0;background:rgba(5,40,70,.8);display:none;align-items:center;justify-content:center;z-index:10;padding:20px;cursor:zoom-out}
+#lightbox.on{display:flex}
+#lightbox img{max-width:100%;max-height:100%;border:6px solid #fff;border-radius:6px;box-shadow:0 0 40px rgba(39,196,240,.8)}
+
+/* contact */
+.links{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.btn{display:block;text-decoration:none;text-align:center;font:inherit;font-weight:600;color:#fff;cursor:pointer;
+  padding:12px 16px;border-radius:99px;text-shadow:0 1px 2px rgba(0,50,80,.55);
+  background:linear-gradient(180deg,#a8f08a,#4cc21a 50%,#2f9a0c 51%,#7edc4a);border:1px solid #23780a;
+  box-shadow:0 4px 10px rgba(0,80,20,.35),inset 0 1px 0 rgba(255,255,255,.8)}
+.btn.blue{background:linear-gradient(180deg,#9fe6ff,#27c4f0 50%,#0aa6dc 51%,#5fd8fa);border-color:#0885b5}
+.btn:hover{filter:brightness(1.08)}
+footer{text-align:center;margin-top:18px;font-size:.85rem;color:#0d3350;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+@media(prefers-reduced-motion:no-preference){.bubble{animation:float 9s ease-in-out infinite alternate}.b2{animation-delay:-3s}.b3{animation-delay:-6s}}
+@keyframes float{to{transform:translateY(-22px)}}
+</style>
+</head>
+<body>
+<div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div><div class="bubble b4"></div>
+
+<div class="wrap">
+ <div class="win">
+  <div class="titlebar"><span class="dot"></span>xyzi - Profile<span class="ctl"><i></i><i></i><i></i></span></div>
+  <div class="banner" role="img" aria-label="Banner"></div>
+  <div class="head">
+    <img class="pfp" src="profile.png" alt="xyzi profile picture">
+    <div>
+      <h1 id="name"></h1>
+      <span class="status" id="status"></span>
+    </div>
+  </div>
+
+  <nav role="tablist" aria-label="Pages">
+    <button role="tab" id="t-profile" aria-selected="true" data-tab="profile">Profile</button>
+    <button role="tab" id="t-photography" aria-selected="false" data-tab="photography">Photography</button>
+    <button role="tab" id="t-contact" aria-selected="false" data-tab="contact">Contact</button>
+  </nav>
+
+  <main>
+   <section id="profile" role="tabpanel">
+     <div class="about">
+       <div class="panel">
+         <h2>About</h2>
+         <p id="bio" style="line-height:1.5;margin:0"></p>
+         <ul class="tags" id="tags"></ul>
+       </div>
+       <div class="panel">
+         <h2>Latest updates</h2>
+         <div id="updates"></div>
+       </div>
+     </div>
+   </section>
+
+   <section id="photography" role="tabpanel" hidden>
+     <h2>Photography</h2>
+     <div class="grid" id="gallery"></div>
+   </section>
+
+   <section id="contact" role="tabpanel" hidden>
+     <h2>Contact</h2>
+     <div class="links" id="links"></div>
+   </section>
+  </main>
+ </div>
+ <footer>fRutIgER aERO :))))))))))))0 Hi <span id="yr"></span></footer>
+</div>
+
+<div id="lightbox"><img alt=""></div>
+
+<script>
+/* =====================================================
+   EDIT HERE - everything on the page comes from this.
+   ===================================================== */
+const SITE = {
+  name: "xyzi",
+  status: "Online",
+  bio: "Hi, I'm xyzi. Welcome to my corner of the web! I like to play Geometry Dash and Minecraft. I also like to tinker around with technology. I use arch btw. If you want my uncompressed images, shoot me a DM on Discord! Shoutout to my friends! <3",
+  tags: ["frutiger aero", "photography", "arch linux"],
+  email: "myrougeyoshi@rugina.lol"          // used by the contact form
+};
+
+/* UPDATES: add a new line at the TOP of the list. Newest first is automatic anyway,
+   it sorts by date (YYYY-MM-DD). */
+const UPDATES = [
+  { date: "2026-10-02", title: "I played Mario Kart Wii.", text: "I installed Retro Rewind and played Grumble Volcano." },
+  { date: "2026-10-02", title: "Site is live!", text: "Welcome! This is the first update. More soon." }
+];
+
+/* PHOTOS: drop image files into the photos folder, then add a line here. */
+const PHOTOS = [
+  // { src: "photos/example.jpg", caption: "Caption goes here" },
+  { src: "photos/IMG_2326.jpg", caption: "Greek Cliff" },
+  { src: "photos/IMG_2686.jpg", caption: "Greek Vibrant Cliffside" },
+  { src: "photos/IMG_3244.jpg", caption: "Casa Loma Waterfall 1" },
+  { src: "photos/IMG_3345.jpg", caption: "Night in Toronto" },
+  { src: "photos/IMG_3422.jpg", caption: "From the Lake at the CN Tower" },
+  { src: "photos/IMG_4059.jpg", caption: "Vibrant Trees" },
+  { src: "photos/IMG_2453.jpg", caption: "Greek Cliffside 1" },
+  { src: "photos/IMG_3208.jpg", caption: "CN Tower from Casa Loma" },
+  { src: "photos/IMG_3250.jpg", caption: "Casa Loma Waterfall 2" },
+  { src: "photos/IMG_3359.jpg", caption: "A look into the Lake, Toronto" },
+  { src: "photos/IMG_3423.jpg", caption: "Big Ball in Toronto" },
+  { src: "photos/IMG_4062.jpg", caption: "Trees of God" },
+  { src: "photos/IMG_2456_1.jpg", caption: "Looking down at Greek residency" },
+  { src: "photos/IMG_3209.jpg", caption: "CN Tower from Casa Loma 2" },
+  { src: "photos/IMG_3258.jpg", caption: "Inside Casa Loma" },
+  { src: "photos/IMG_3363.jpg", caption: "A look into the Lake, Toronto 2" },
+  { src: "photos/IMG_3480.jpg", caption: "That's not the CN Tower!" },
+  { src: "photos/IMG_4063.jpg", caption: "Large Field. Space for all" },
+  { src: "photos/IMG_2621.jpg", caption: "Looking from Greek Sea" },
+  { src: "photos/IMG_3211.jpg", caption: "CN Tower from Casa Loma 3" },
+  { src: "photos/IMG_3311.jpg", caption: "Top of the CN Tower" },
+  { src: "photos/IMG_3365.jpg", caption: "CN Tower from the Lake" },
+  { src: "photos/IMG_3496.jpg", caption: "Niagara Falls Nearby" },
+  { src: "photos/IMG_4072.jpg", caption: "Nature from God" },
+  { src: "photos/IMG_2633.jpg", caption: "A Look into the Sea, Greece" },
+  { src: "photos/IMG_3213.jpg", caption: "Infrastructure from Casa Loma" },
+  { src: "photos/IMG_3322.jpg", caption: "High View from CN Tower" },
+  { src: "photos/IMG_3367.jpg", caption: "CN Tower is so Tall!" },
+  { src: "photos/IMG_3533.jpg", caption: "Sheraton on the Hill" },
+  { src: "photos/IMG_4076.jpg", caption: "Log Bench" },
+  { src: "photos/IMG_2664.jpg", caption: "Evening Walk in Zakynthos" },
+  { src: "photos/IMG_3216.jpg", caption: "Casa Loma" },
+  { src: "photos/IMG_3328.jpg", caption: "The view at the top of the CN Tower" },
+  { src: "photos/IMG_3372.jpg", caption: "Rogers Centre" },
+  { src: "photos/IMG_3543.jpg", caption: "Niagara Falls 1" },
+  { src: "photos/IMG_2678.jpg", caption: "Vibrant Greek Cliffside" },
+  { src: "photos/IMG_3222.jpg", caption: "View from Casa Loma" },
+  { src: "photos/IMG_3338.jpg", caption: "Above the Stadium" },
+  { src: "photos/IMG_3375.jpg", caption: "On the right, the CN Tower" },
+  { src: "photos/IMG_3546.jpg", caption: "Niagra Falls 2" },
+  { src: "photos/IMG_2681_3.jpg", caption: "Very Blue Sea in Greece." },
+  { src: "photos/IMG_3227.jpg", caption: "Looking down from Casa Loma" },
+  { src: "photos/IMG_3341.jpg", caption: "TD at Night" },
+  { src: "photos/IMG_3384.jpg", caption: "Business at Home" },
+  { src: "photos/IMG_3554.jpg", caption: "Niagara Falls 3" },
+  { src: "photos/IMG_2685.jpg", caption: "Amazing Sight. Love Greece." },
+  { src: "photos/IMG_3229.jpg", caption: "Inside Casa Loma" },
+  { src: "photos/IMG_3342.jpg", caption: "Toronto at Night" },
+  { src: "photos/IMG_3411.jpg", caption: "Boats in the Lake" },
+  { src: "photos/IMG_3557.jpg", caption: "Niagara Falls Smoking" }
+];
+
+/* CONTACT LINKS: label + url. Add or remove lines freely. */
+const LINKS = [
+  { label: "Email", url: "mailto:myrougeyoshi@rugina.lol", style: "blue" },
+  { label: "X", url: "https://x.com/xyzixyzi", style: "" },
+  { label: "Discord", url: "https://rugina.lol/discord", style: "blue" }
+];
+/* ===================== end of edit zone ===================== */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+$("name").textContent = SITE.name;
+$("status").textContent = SITE.status;
+$("bio").textContent = SITE.bio;
+$("yr").textContent = new Date().getFullYear();
+$("tags").innerHTML = SITE.tags.map(t => `<li>${esc(t)}</li>`).join("");
+
+$("updates").innerHTML = [...UPDATES].sort((a,b) => b.date.localeCompare(a.date)).map(u =>
+  `<article class="post"><h3>${esc(u.title)}</h3><time datetime="${esc(u.date)}">${esc(u.date)}</time><p>${esc(u.text)}</p></article>`
+).join("") || "<p>No updates yet.</p>";
+
+$("gallery").innerHTML = PHOTOS.length ? PHOTOS.map(p =>
+  `<figure class="photo"><img src="${esc(p.src)}" alt="${esc(p.caption||"")}" loading="lazy"><figcaption>${esc(p.caption||"")}</figcaption></figure>`
+).join("") : `<div class="panel empty" style="grid-column:1/-1">No photos yet. Add files to the photos folder and list them in PHOTOS.</div>`;
+
+$("links").innerHTML = LINKS.map(l => `<a class="btn ${l.style||""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("");
+
+/* lightbox */
+const lb = $("lightbox");
+$("gallery").addEventListener("click", e => {
+  const img = e.target.closest(".photo")?.querySelector("img");
+  if (img) { lb.querySelector("img").src = img.src; lb.classList.add("on"); }
+});
+lb.onclick = () => lb.classList.remove("on");
+
+/* tabs */
+const tabs = document.querySelectorAll("nav button");
+function show(name){
+  if (!$(name)) name = "profile";
+  tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  document.querySelectorAll("main section").forEach(s => s.hidden = s.id !== name);
+  history.replaceState(null, "", "#" + name);
+}
+tabs.forEach(b => b.onclick = () => show(b.dataset.tab));
+show(location.hash.slice(1) || "profile");
+</script>
+</body>
+</html>
