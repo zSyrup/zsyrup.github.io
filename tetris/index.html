@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Tetris</title>
+<style>
+  :root{--bg:#0b0d14;--panel:#141824;--line:#2a3144;--text:#e8ecf5;--dim:#8a93a8;--accent:#5b8cff}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  body{min-height:100vh;display:flex;justify-content:center;padding:12px}
+  .game{width:100%;max-width:600px}
+  .stage{position:relative}
+  canvas{display:block;width:100%;height:auto;background:#0f1220;border-radius:10px}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(8,10,18,.84);border-radius:10px;text-align:center;padding:20px}
+  .overlay h1{margin:0;font-size:clamp(26px,6vw,40px);letter-spacing:.04em}
+  .overlay p{margin:0;color:var(--dim);font-size:14px;line-height:1.5;max-width:420px}
+  button{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .bar{display:flex;gap:8px;justify-content:center;margin-top:10px}
+  .touch{display:none;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+  body.touch-on .touch{display:grid}
+  .touch button{height:56px;padding:0;font-size:20px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .touch button small{font-size:11px}
+  .modal{position:fixed;inset:0;background:rgba(5,6,12,.8);display:flex;align-items:center;justify-content:center;padding:14px;z-index:10}
+  .modal[hidden]{display:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;width:100%;max-width:460px;max-height:92vh;overflow:auto}
+  .card h2{margin:0 0 12px}
+  .card h3{margin:16px 0 8px;font-size:15px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  .grid{display:grid;gap:10px}
+  .grid label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+  .grid label.chk{justify-content:flex-start}
+  input[type=number],select{background:#0b0d14;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;width:100px}
+  .krow{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:14px}
+  .krow button{min-width:110px;padding:6px 10px}
+  .krow button.cap{border-color:var(--accent);color:var(--accent)}
+  .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .note{font-size:12px;color:var(--dim);margin:12px 0 0}
+  .lb{width:100%;max-width:320px}
+  .lb h3{margin:0 0 6px;font-size:12px;color:var(--dim);letter-spacing:.14em}
+  .lb ol{list-style:none;margin:0;padding:0;font-size:14px}
+  .lb li{display:grid;grid-template-columns:20px 1fr auto 52px;gap:8px;padding:3px 8px;border-radius:6px;text-align:left}
+  .lb li:nth-child(odd){background:rgba(255,255,255,.04)}
+  .lb li.new{background:rgba(91,140,255,.25);outline:1px solid var(--accent)}
+  .lb .r{color:var(--dim)} .lb .s{font-weight:700} .lb .l{color:var(--accent)} .lb .d{color:var(--dim);text-align:right;font-size:12px;align-self:center}
+  input[type=range]{width:150px;accent-color:var(--accent)}
+  .trackrow{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--dim)}
+  .trackrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .trackrow div{display:flex;gap:6px;flex-shrink:0}
+  .trackrow button{padding:6px 10px}
+  button:disabled{opacity:.4;cursor:default}
+  .row{flex-wrap:wrap}
+  @media (max-width:480px){
+    .overlay{gap:6px;padding:10px}
+    .overlay p{font-size:11px;line-height:1.35}
+    .lb li{padding:2px 6px;font-size:12px}
+    .overlay button{padding:6px 12px}
+  }
+</style>
+</head>
+<body>
+<div class="game">
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="overlay" id="overlay">
+      <h1 id="ovTitle">TETRIS</h1>
+      <p id="ovText"></p>
+      <div class="lb" id="lb"></div>
+      <button class="primary" id="ovBtn">Play</button>
+      <button id="ovSettings">Settings</button>
+    </div>
+  </div>
+  <div class="touch" id="touch">
+    <button data-a="left">◀</button>
+    <button data-a="right">▶</button>
+    <button data-a="soft">▼</button>
+    <button data-a="hard">⤓</button>
+    <button data-a="ccw">↺</button>
+    <button data-a="cw">↻</button>
+    <button data-a="hold"><small>HOLD</small></button>
+  </div>
+  <div class="bar">
+    <button id="btnPause">Pause</button>
+    <button id="btnMute">Sound: On</button>
+    <button id="btnSettings">Settings</button>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="card">
+    <h2>Settings</h2>
+    <div class="grid">
+      <label>Next pieces shown
+        <select id="sNext"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+      </label>
+      <label class="chk"><input type="checkbox" id="sBag"> 7-bag randomiser</label>
+      <label>Starting level (0–20) <input type="number" id="sLevel" min="0" max="20"></label>
+      <label class="chk"><input type="checkbox" id="sGhost"> Ghost piece</label>
+      <label>DAS – delay (ms) <input type="number" id="sDas" min="0" max="500"></label>
+      <label>ARR – repeat (ms, 0 = instant) <input type="number" id="sArr" min="0" max="100"></label>
+      <label>Soft drop speed
+        <select id="sSoft"><option value="5">5×</option><option value="10">10×</option><option value="20">20×</option><option value="40">40×</option><option value="0">Instant</option></select>
+      </label>
+      <label class="chk"><input type="checkbox" id="sTouch"> On-screen touch buttons</label>
+    </div>
+    <h3>Audio</h3>
+    <div class="grid">
+      <label class="chk"><input type="checkbox" id="sMusic"> Music</label>
+      <label>Music volume <input type="range" id="sMusicVol" min="0" max="100"></label>
+      <div class="trackrow"><span id="trackName">No track loaded</span>
+        <div><button id="trackPick">Choose MP3…</button><button id="trackClear">Remove</button></div></div>
+      <label class="chk"><input type="checkbox" id="sSfx"> Sound effects</label>
+      <label>Effects volume <input type="range" id="sSfxVol" min="0" max="100"></label>
+    </div>
+    <input type="file" id="trackFile" accept="audio/*,.mp3" hidden>
+    <h3>Controls</h3>
+    <div id="keys"></div>
+    <p class="note">Click a control, then press the key you want (Esc cancels). Starting level applies to the next game.</p>
+    <div class="row">
+      <button id="kReset">Reset controls</button>
+      <button id="lbClear">Clear scores</button>
+      <button class="primary" id="sClose">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- constants ---------- */
+const COLS = 10, ROWS = 40, VIS = 20, HID = ROWS - VIS;
+const CELL = 30, BX = 150, BY = 20, W = 600, H = 640;
+const LOCK_DELAY = 500, MAX_RESETS = 15;
+const COLORS = {I:'#00e5ee',O:'#f2d000',T:'#b030f0',S:'#30d030',Z:'#e83030',J:'#2e50f0',L:'#f09000'};
+const BASE = {
+  I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  O:[[1,1],[1,1]],
+  T:[[0,1,0],[1,1,1],[0,0,0]],
+  S:[[0,1,1],[1,1,0],[0,0,0]],
+  Z:[[1,1,0],[0,1,1],[0,0,0]],
+  J:[[1,0,0],[1,1,1],[0,0,0]],
+  L:[[0,0,1],[1,1,1],[0,0,0]]
+};
+const TYPES = Object.keys(BASE);
+const rotCW = m => { const n = m.length; return m.map((_, r) => m[0].map((_, c) => m[n-1-c][r])); };
+const SH = {};
+for (const t of TYPES) { let m = BASE[t]; SH[t] = [m]; for (let i = 1; i < 4; i++) { m = rotCW(m); SH[t].push(m); } }
+
+/* SRS wall kicks: [x, y(up)] */
+const KICK_JLSTZ = {
+  '01':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '10':[[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  '12':[[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  '21':[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '23':[[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  '32':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '30':[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '03':[[0,0],[1,0],[1,1],[0,-2],[1,-2]]
+};
+const KICK_I = {
+  '01':[[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  '10':[[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  '12':[[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+  '21':[[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+  '23':[[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  '32':[[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  '30':[[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+  '03':[[0,0],[-1,0],[2,0],[-1,2],[2,-1]]
+};
+
+/* ---------- settings ---------- */
+const LS = 'tetris-settings-v1', LS_BEST = 'tetris-best-v1', LS_LB = 'tetris-leaderboard-v1';
+const DEFAULT_KEYS = {left:'a', right:'d', soft:'s', hard:'w', cw:',', ccw:'.', hold:'\\', pause:'Escape', restart:'r'};
+const ACTION_NAMES = {left:'Move left', right:'Move right', soft:'Soft drop', hard:'Hard drop', cw:'Rotate clockwise', ccw:'Rotate anticlockwise', hold:'Hold piece', pause:'Pause', restart:'Restart'};
+const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+const DEF = {next:5, bag:true, startLevel:0, ghost:true, das:167, arr:33, soft:20, touch:coarse, music:true, musicVol:50, sfx:true, sfxVol:60, mute:false};
+let S = loadSettings();
+function loadSettings() {
+  try {
+    const j = JSON.parse(localStorage.getItem(LS) || '{}');
+    return Object.assign({}, DEF, j, {keys: Object.assign({}, DEFAULT_KEYS, j.keys || {})});
+  } catch (e) { return Object.assign({}, DEF, {keys: Object.assign({}, DEFAULT_KEYS)}); }
+}
+function saveSettings() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} }
+let best = 0;
+try { best = parseInt(localStorage.getItem(LS_BEST) || '0', 10) || 0; } catch (e) {}
+
+/* ---------- leaderboard (top 5, kept in localStorage) ---------- */
+let lb = [], lastEntry = -1;
+try {
+  const j = JSON.parse(localStorage.getItem(LS_LB) || '[]');
+  if (Array.isArray(j)) lb = j.filter(e => e && isFinite(e.score)).slice(0, 5);
+} catch (e) {}
+if (lb.length && lb[0].score > best) best = lb[0].score;
+function saveLb() { try { localStorage.setItem(LS_LB, JSON.stringify(lb)); } catch (e) {} }
+function addScore() {
+  if (score <= 0) return -1;
+  const e = {score, level, lines, date: Date.now()};
+  lb.push(e);
+  lb.sort((a, b) => b.score - a.score);          // stable: older equal scores stay ahead
+  const idx = lb.indexOf(e);
+  lb = lb.slice(0, 5);
+  saveLb();
+  return idx < 5 ? idx : -1;
+}
+
+/* ---------- sound effects (synthesised, no files needed) ---------- */
+let justHard = false;
+const Snd = (() => {
+  let ac = null, master = null;
+  function init() {
+    if (!ac) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      ac = new C(); master = ac.createGain(); master.connect(ac.destination);
+    }
+    if (ac.state === 'suspended') ac.resume();
+    return ac;
+  }
+  function tone(f, d, o = {}) {
+    const t = ac.currentTime + (o.at || 0), v = o.vol == null ? 0.2 : o.vol;
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = o.type || 'square';
+    osc.frequency.setValueAtTime(f, t);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + d);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    osc.connect(g); g.connect(master);
+    osc.start(t); osc.stop(t + d + 0.03);
+  }
+  function noise(d, vol, freq, at = 0) {
+    const t = ac.currentTime + at, len = Math.max(1, Math.floor(ac.sampleRate * d));
+    const buf = ac.createBuffer(1, len, ac.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq;
+    const g = ac.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(master); src.start(t);
+  }
+  const N = n => 440 * Math.pow(2, (n - 69) / 12);
+  const arp = (notes, step, d, o = {}) => notes.forEach((n, i) => tone(N(n), d, Object.assign({at: (o.start || 0) + i * step}, o)));
+  const lib = {
+    move:    () => tone(320, 0.03, {vol: 0.05}),
+    rotate:  () => tone(500, 0.05, {to: 750, type: 'triangle', vol: 0.12}),
+    hold:    () => tone(420, 0.09, {to: 280, type: 'triangle', vol: 0.14}),
+    lock:    () => tone(150, 0.06, {type: 'triangle', vol: 0.2}),
+    drop:    () => { tone(170, 0.13, {to: 45, type: 'sine', vol: 0.45}); noise(0.08, 0.15, 1800); },
+    clear:   n => {
+      const sets = {1: [72, 76], 2: [72, 76, 79], 3: [72, 76, 79, 84], 4: [72, 76, 79, 84, 88, 91]};
+      arp(sets[n] || sets[1], n >= 4 ? 0.055 : 0.06, n >= 4 ? 0.2 : 0.12, {vol: n >= 4 ? 0.16 : 0.12});
+      if (n >= 4) noise(0.3, 0.12, 4000);
+    },
+    tspin:   n => { tone(220, 0.28, {to: 1300, type: 'sawtooth', vol: 0.1}); if (n) lib.clear(n); },
+    level:   () => arp([67, 72, 76, 79, 84], 0.07, 0.14, {start: 0.35, type: 'triangle', vol: 0.18}),
+    perfect: () => arp([72, 79, 84, 88, 91, 96], 0.08, 0.2, {start: 0.3, type: 'triangle', vol: 0.18}),
+    over:    () => arp([67, 64, 60, 55, 48], 0.18, 0.32, {type: 'sawtooth', vol: 0.14})
+  };
+  return {
+    unlock: init,
+    play(name, arg) {
+      if (!S.sfx || S.mute) return;
+      if (!init()) return;
+      master.gain.value = S.sfxVol / 100;
+      try { lib[name] && lib[name](arg); } catch (e) {}
+    }
+  };
+})();
+
+/* ---------- music (your own mp3, remembered between visits) ---------- */
+const Music = (() => {
+  const el = new Audio(); el.loop = true; el.preload = 'auto';
+  let url = null, name = '';
+  const DB = 'tetris-audio-v1', STORE = 'files';
+  const db = () => new Promise((res, rej) => {
+    const r = indexedDB.open(DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  const run = (mode, fn) => db().then(d => new Promise((res, rej) => {
+    const tx = d.transaction(STORE, mode), rq = fn(tx.objectStore(STORE));
+    tx.oncomplete = () => res(rq && rq.result); tx.onerror = () => rej(tx.error);
+  }));
+  function set(blob, n) {
+    if (url) URL.revokeObjectURL(url);
+    url = blob ? URL.createObjectURL(blob) : null; name = blob ? n : '';
+    if (url) el.src = url; else { el.removeAttribute('src'); el.load(); }
+  }
+  return {
+    el,
+    has: () => !!url,
+    name: () => name,
+    async load() { try { const r = await run('readonly', s => s.get('music')); if (r && r.blob) set(r.blob, r.name); } catch (e) {} },
+    async use(file) { set(file, file.name); try { await run('readwrite', s => s.put({blob: file, name: file.name}, 'music')); return true; } catch (e) { return false; } },
+    async remove() { set(null); try { await run('readwrite', s => s.delete('music')); } catch (e) {} },
+    sync() {
+      el.volume = Math.max(0, Math.min(1, S.musicVol / 100));
+      if (state === 'playing' && S.music && !S.mute && url) { const p = el.play(); if (p && p.catch) p.catch(() => {}); }
+      else el.pause();
+    }
+  };
+})();
+
+/* ---------- state ---------- */
+let board, cur, holdType, holdUsed, queue;
+let score, lines, level, combo, b2b;
+let state = 'menu'; // menu | playing | paused | over
+let gravAcc, lockTimer, lockResets, lowestY, lastRotate, lastKick;
+let held = {left:false, right:false, soft:false};
+let hDir = 0, dasT = 0, arrAcc = 0;
+let popup = null;
+board = emptyBoard(); queue = []; holdType = null; holdUsed = false;
+score = 0; lines = 0; level = S.startLevel; combo = -1; b2b = false;
+
+function emptyBoard() { return Array.from({length: ROWS}, () => Array(COLS).fill(null)); }
+
+/* ---------- randomiser ---------- */
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function fillQueue() {
+  while (queue.length < 14) {
+    if (S.bag) queue.push(...shuffle(TYPES.slice()));
+    else queue.push(TYPES[Math.floor(Math.random() * 7)]);
+  }
+}
+function nextPiece() { fillQueue(); const t = queue.shift(); fillQueue(); return t; }
+
+/* ---------- piece helpers ---------- */
+function collides(p, dx = 0, dy = 0) {
+  const m = SH[p.t][p.r];
+  for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) {
+    if (!m[r][c]) continue;
+    const x = p.x + c + dx, y = p.y + r + dy;
+    if (x < 0 || x >= COLS || y >= ROWS) return true;
+    if (y >= 0 && board[y][x]) return true;
+  }
+  return false;
+}
+function ghostY() { let y = cur.y; while (!collides(cur, 0, y - cur.y + 1)) y++; return y; }
+
+function gravityMs(lv) {
+  const l = Math.min(lv, 20);
+  return Math.pow(0.8 - l * 0.007, l) * 1000;
+}
+function levelFor(n, start) {
+  const first = (start + 1) * 10;
+  return n < first ? start : start + 1 + Math.floor((n - first) / 10);
+}
+
+function spawn(t) {
+  cur = {t, r:0, x: t === 'O' ? 4 : 3, y: HID - 2};
+  lockTimer = 0; lockResets = 0; gravAcc = 0; lastRotate = false; lastKick = 0;
+  if (collides(cur)) { gameOver(); return; }
+  if (!collides(cur, 0, 1)) cur.y++;
+  lowestY = cur.y;
+}
+
+/* ---------- movement ---------- */
+function shift(dx) {
+  if (!cur || collides(cur, dx, 0)) return false;
+  cur.x += dx; lastRotate = false; return true;
+}
+function touchReset() {
+  if (!cur) return;
+  if (collides(cur, 0, 1)) {
+    if (lockResets >= MAX_RESETS) lockPiece();
+    else { lockTimer = 0; lockResets++; }
+  } else lockTimer = 0;
+}
+function rotate(dir) {
+  if (!cur || cur.t === 'O') return;
+  const from = cur.r, to = (from + dir + 4) % 4;
+  const table = cur.t === 'I' ? KICK_I : KICK_JLSTZ;
+  const kicks = table['' + from + to];
+  for (let i = 0; i < kicks.length; i++) {
+    const np = {t:cur.t, r:to, x:cur.x + kicks[i][0], y:cur.y - kicks[i][1]};
+    if (!collides(np)) {
+      cur = np; lastRotate = true; lastKick = i; Snd.play('rotate');
+      if (cur.y > lowestY) { lowestY = cur.y; lockResets = 0; }
+      touchReset();
+      return;
+    }
+  }
+}
+function hardDrop() {
+  if (!cur) return;
+  let n = 0;
+  while (!collides(cur, 0, 1)) { cur.y++; n++; }
+  if (n) { score += n * 2; lastRotate = false; }
+  Snd.play('drop'); justHard = true;
+  lockPiece();
+}
+function doHold() {
+  if (!cur || holdUsed) return;
+  const t = cur.t;
+  if (holdType) { const h = holdType; holdType = t; spawn(h); }
+  else { holdType = t; spawn(nextPiece()); }
+  holdUsed = true; Snd.play('hold');
+}
+
+/* ---------- locking & scoring ---------- */
+function lockPiece() {
+  const p = cur; if (!p) return;
+  let spin = null;
+  if (p.t === 'T' && lastRotate) {
+    const occ = (c, r) => { const x = p.x + c, y = p.y + r; return x < 0 || x >= COLS || y >= ROWS || (y >= 0 && !!board[y][x]); };
+    const cnt = [[0,0],[2,0],[0,2],[2,2]].filter(([c, r]) => occ(c, r)).length;
+    if (cnt >= 3) {
+      const front = [[[0,0],[2,0]], [[2,0],[2,2]], [[0,2],[2,2]], [[0,0],[0,2]]][p.r];
+      spin = (front.every(([c, r]) => occ(c, r)) || lastKick === 4) ? 'full' : 'mini';
+    }
+  }
+  const m = SH[p.t][p.r]; let vis = false;
+  for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) {
+    if (!m[r][c]) continue;
+    const y = p.y + r, x = p.x + c;
+    board[y][x] = p.t; if (y >= HID) vis = true;
+  }
+  cur = null; holdUsed = false;
+
+  let n = 0;
+  for (let y = ROWS - 1; y >= 0; y--) {
+    if (board[y].every(Boolean)) { board.splice(y, 1); board.unshift(Array(COLS).fill(null)); n++; y++; }
+  }
+  if (!vis && n === 0) { gameOver(); return; }
+
+  const mult = level + 1;
+  const NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
+  let pts = 0, label = [];
+  if (spin) {
+    const tbl = spin === 'mini' ? [100, 200, 400] : [400, 800, 1200, 1600];
+    pts = (tbl[n] || 0) * mult;
+    label.push((spin === 'mini' ? 'T-SPIN MINI' : 'T-SPIN') + (n ? ' ' + NAMES[n] : ''));
+  } else if (n > 0) {
+    pts = [0, 100, 300, 500, 800][n] * mult;
+    label.push(NAMES[n]);
+  }
+  if (n > 0) {
+    const difficult = n === 4 || !!spin;
+    if (difficult) {
+      if (b2b) { pts = Math.floor(pts * 1.5); label.unshift('BACK-TO-BACK'); }
+      b2b = true;
+    } else b2b = false;
+    combo++;
+    if (combo > 0) { pts += 50 * combo * mult; label.push('COMBO ×' + combo); }
+    if (board.every(row => row.every(c => !c))) {
+      pts += [0, 800, 1200, 1800, 2000][n] * mult; label.push('PERFECT CLEAR');
+    }
+    lines += n;
+    const nl = levelFor(lines, S.startLevel);
+    if (nl > level) { level = nl; label.push('LEVEL ' + level); }
+  } else combo = -1;
+  score += pts;
+  if (n > 0) {
+    Snd.play(spin ? 'tspin' : 'clear', n);
+    if (label.includes('PERFECT CLEAR')) Snd.play('perfect');
+    if (label.some(l => l.startsWith('LEVEL '))) Snd.play('level');
+  } else if (spin) Snd.play('tspin', 0);
+  else if (!justHard) Snd.play('lock');
+  justHard = false;
+  if (label.length) popup = {lines: label, t: 0};
+
+  if (state === 'playing') spawn(nextPiece());
+}
+
+function gameOver() {
+  state = 'over'; cur = null;
+  if (score > best) { best = score; try { localStorage.setItem(LS_BEST, String(best)); } catch (e) {} }
+  lastEntry = addScore();
+  let msg = 'Score ' + score.toLocaleString() + ' · Lines ' + lines + ' · Level ' + level;
+  if (lastEntry >= 0) msg += '\n★ New top-5 score — #' + (lastEntry + 1) + ' ★';
+  showOverlay('GAME OVER', msg, 'Play again');
+  Snd.play('over'); Music.sync();
+}
+
+/* ---------- game flow ---------- */
+function startGame() {
+  S.startLevel = Math.max(0, Math.min(20, S.startLevel | 0));
+  board = emptyBoard(); queue = []; fillQueue();
+  holdType = null; holdUsed = false;
+  score = 0; lines = 0; level = S.startLevel; combo = -1; b2b = false; popup = null;
+  held = {left:false, right:false, soft:false}; hDir = 0; dasT = 0; arrAcc = 0;
+  state = 'playing'; hideOverlay(); lastEntry = -1; justHard = false;
+  Snd.unlock(); Music.el.currentTime = 0; Music.sync();
+  spawn(nextPiece());
+}
+function pauseGame() { if (state === 'playing') { state = 'paused'; showOverlay('PAUSED', '', 'Resume'); Music.sync(); } }
+function resumeGame() { if (state === 'paused') { state = 'playing'; hideOverlay(); Music.sync(); } }
+function togglePause() { state === 'playing' ? pauseGame() : resumeGame(); }
+
+function update(dt) {
+  if (!cur) return;
+  /* horizontal DAS / ARR */
+  if (hDir) {
+    if (dasT < S.das) dasT += dt;
+    if (dasT >= S.das) {
+      let moved = false;
+      if (S.arr === 0) { while (shift(hDir)) moved = true; }
+      else {
+        arrAcc += dt;
+        while (arrAcc >= S.arr) { arrAcc -= S.arr; if (shift(hDir)) moved = true; else { arrAcc = 0; break; } }
+      }
+      if (moved) touchReset();
+      if (!cur) return;
+    }
+  }
+  /* gravity */
+  let eff = gravityMs(level);
+  const soft = held.soft;
+  if (soft) eff = S.soft === 0 ? 0.05 : eff / S.soft;
+  gravAcc += dt;
+  while (gravAcc >= eff) {
+    if (!collides(cur, 0, 1)) {
+      cur.y++; gravAcc -= eff; lastRotate = false;
+      if (soft) score += 1;
+      if (cur.y > lowestY) { lowestY = cur.y; lockResets = 0; }
+    } else { gravAcc = 0; break; }
+  }
+  /* lock delay */
+  if (collides(cur, 0, 1)) {
+    lockTimer += dt;
+    if (lockTimer >= LOCK_DELAY) lockPiece();
+  } else lockTimer = 0;
+}
+
+/* ---------- input ---------- */
+const heldCodes = {};
+function norm(k) { return k.length === 1 ? k.toLowerCase() : k; }
+const KNAMES = {' ':'Space', ArrowLeft:'←', ArrowRight:'→', ArrowUp:'↑', ArrowDown:'↓', Escape:'Esc'};
+function lab(k) { return KNAMES[k] || (k.length === 1 ? k.toUpperCase() : k); }
+
+function press(a, code) {
+  if (a === 'restart') { startGame(); return; }
+  if (a === 'pause') { if (state === 'playing' || state === 'paused') togglePause(); return; }
+  if (state !== 'playing' || !cur) return;
+  heldCodes[a] = code;
+  switch (a) {
+    case 'left': case 'right': {
+      held[a] = true; hDir = a === 'left' ? -1 : 1; dasT = 0; arrAcc = 0;
+      if (shift(hDir)) { touchReset(); Snd.play('move'); }
+      break;
+    }
+    case 'soft': held.soft = true; break;
+    case 'hard': hardDrop(); break;
+    case 'cw': rotate(1); break;
+    case 'ccw': rotate(-1); break;
+    case 'hold': doHold(); break;
+  }
+}
+function release(a) {
+  if (a === 'left' || a === 'right') {
+    held[a] = false;
+    const d = a === 'left' ? -1 : 1;
+    if (hDir === d) { hDir = held.left ? -1 : held.right ? 1 : 0; arrAcc = 0; }
+  } else if (a === 'soft') held.soft = false;
+}
+
+let capturing = null;
+const modal = document.getElementById('modal');
+
+window.addEventListener('keydown', e => {
+  if (capturing) {
+    e.preventDefault();
+    if (e.key === 'Escape') { capturing = null; renderKeys(); return; }
+    if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
+    const k = norm(e.key);
+    for (const a in S.keys) if (a !== capturing && S.keys[a] === k) S.keys[a] = S.keys[capturing];
+    S.keys[capturing] = k; capturing = null; saveSettings(); renderKeys(); return;
+  }
+  if (!modal.hidden) return;
+  const tag = e.target && e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === 'Enter' && tag !== 'BUTTON') {
+    if (state === 'menu' || state === 'over') { e.preventDefault(); startGame(); }
+    else if (state === 'paused') { e.preventDefault(); resumeGame(); }
+    return;
+  }
+  const k = norm(e.key);
+  for (const a in S.keys) {
+    if (S.keys[a] !== k) continue;
+    if (state === 'playing' || state === 'paused') e.preventDefault();
+    if (!e.repeat) press(a, e.code);
+    return;
+  }
+});
+window.addEventListener('keyup', e => {
+  for (const a in heldCodes) if (heldCodes[a] === e.code) { release(a); delete heldCodes[a]; }
+});
+window.addEventListener('blur', () => {
+  for (const a in heldCodes) { release(a); delete heldCodes[a]; }
+  held = {left:false, right:false, soft:false}; hDir = 0;
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+/* touch buttons */
+document.querySelectorAll('#touch button').forEach(b => {
+  const a = b.dataset.a;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); press(a, 'touch-' + a); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { release(a); delete heldCodes[a]; }));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+});
+
+/* ---------- overlay & settings UI ---------- */
+const $ = id => document.getElementById(id);
+function controlsHint() {
+  const k = S.keys;
+  return lab(k.left) + ' / ' + lab(k.right) + ' move · ' + lab(k.soft) + ' soft drop · ' + lab(k.hard) + ' hard drop · ' +
+         lab(k.cw) + ' rotate ↻ · ' + lab(k.ccw) + ' rotate ↺ · ' + lab(k.hold) + ' hold · ' + lab(k.pause) + ' pause';
+}
+function renderLb() {
+  const box = $('lb');
+  if (state !== 'menu' && state !== 'over') { box.style.display = 'none'; return; }
+  box.style.display = ''; box.innerHTML = '';
+  const h = document.createElement('h3'); h.textContent = 'TOP 5'; box.append(h);
+  if (!lb.length) { const p = document.createElement('p'); p.textContent = 'No scores yet — set the first one!'; box.append(p); return; }
+  const ol = document.createElement('ol');
+  lb.forEach((e, i) => {
+    const li = document.createElement('li'); if (i === lastEntry) li.className = 'new';
+    const d = e.date ? new Date(e.date).toLocaleDateString(undefined, {day: 'numeric', month: 'short'}) : '';
+    [['r', i + 1], ['s', e.score.toLocaleString()], ['l', 'Lv ' + e.level], ['d', d]].forEach(([c, t]) => {
+      const s = document.createElement('span'); s.className = c; s.textContent = t; li.append(s);
+    });
+    ol.append(li);
+  });
+  box.append(ol);
+}
+function showOverlay(title, text, btn) {
+  $('ovTitle').textContent = title;
+  $('ovText').textContent = text || '';
+  $('ovBtn').textContent = btn;
+  $('overlay').style.display = 'flex';
+  if (state === 'menu' || state === 'over') $('ovText').textContent = (text ? text + '\n\n' : '') + controlsHint();
+  $('ovText').style.whiteSpace = 'pre-line';
+  renderLb();
+}
+function hideOverlay() { $('overlay').style.display = 'none'; }
+$('ovBtn').onclick = e => { e.target.blur(); state === 'paused' ? resumeGame() : startGame(); };
+$('ovSettings').onclick = e => { e.target.blur(); openSettings(); };
+$('btnSettings').onclick = e => { e.target.blur(); openSettings(); };
+$('btnPause').onclick = e => { e.target.blur(); if (state === 'playing' || state === 'paused') togglePause(); };
+
+function applyMute() { $('btnMute').textContent = 'Sound: ' + (S.mute ? 'Off' : 'On'); }
+$('btnMute').onclick = e => { e.target.blur(); S.mute = !S.mute; saveSettings(); applyMute(); Music.sync(); };
+function updateTrackUI() {
+  $('trackName').textContent = Music.has() ? '♪ ' + Music.name() : 'No track loaded';
+  $('trackName').title = Music.name();
+  $('trackClear').disabled = !Music.has();
+}
+function applyTouch() { document.body.classList.toggle('touch-on', !!S.touch); }
+function openSettings() {
+  pauseGame();
+  $('sNext').value = S.next; $('sBag').checked = S.bag; $('sLevel').value = S.startLevel;
+  $('sGhost').checked = S.ghost; $('sDas').value = S.das; $('sArr').value = S.arr;
+  $('sSoft').value = String(S.soft); $('sTouch').checked = S.touch;
+  $('sMusic').checked = S.music; $('sMusicVol').value = S.musicVol;
+  $('sSfx').checked = S.sfx; $('sSfxVol').value = S.sfxVol; updateTrackUI();
+  renderKeys(); modal.hidden = false;
+}
+function closeSettings() {
+  modal.hidden = true; capturing = null; saveSettings();
+  if (state === 'menu' || state === 'over') showOverlay($('ovTitle').textContent, '', $('ovBtn').textContent);
+}
+const clamp = (v, lo, hi, d) => { v = parseInt(v, 10); return isNaN(v) ? d : Math.max(lo, Math.min(hi, v)); };
+$('sNext').onchange = e => { S.next = clamp(e.target.value, 1, 5, 5); saveSettings(); };
+$('sBag').onchange = e => { S.bag = e.target.checked; saveSettings(); };
+$('sLevel').onchange = e => { S.startLevel = clamp(e.target.value, 0, 20, 0); e.target.value = S.startLevel; saveSettings(); };
+$('sGhost').onchange = e => { S.ghost = e.target.checked; saveSettings(); };
+$('sDas').onchange = e => { S.das = clamp(e.target.value, 0, 500, 167); e.target.value = S.das; saveSettings(); };
+$('sArr').onchange = e => { S.arr = clamp(e.target.value, 0, 100, 33); e.target.value = S.arr; saveSettings(); };
+$('sSoft').onchange = e => { S.soft = clamp(e.target.value, 0, 40, 20); saveSettings(); };
+$('sTouch').onchange = e => { S.touch = e.target.checked; applyTouch(); saveSettings(); };
+$('sMusic').onchange = e => { S.music = e.target.checked; saveSettings(); Music.sync(); };
+$('sMusicVol').oninput = e => { S.musicVol = clamp(e.target.value, 0, 100, 50); Music.el.volume = S.musicVol / 100; };
+$('sMusicVol').onchange = () => saveSettings();
+$('sSfx').onchange = e => { S.sfx = e.target.checked; saveSettings(); Snd.play('rotate'); };
+$('sSfxVol').onchange = e => { S.sfxVol = clamp(e.target.value, 0, 100, 60); saveSettings(); Snd.play('clear', 2); };
+$('trackPick').onclick = () => $('trackFile').click();
+$('trackFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  if (f.type && !f.type.startsWith('audio/')) { alert('Please choose an audio file (MP3).'); return; }
+  const ok = await Music.use(f);
+  updateTrackUI();
+  if (!ok) alert('The track will play, but your browser would not let me save it, so you will need to pick it again next visit.');
+};
+$('trackClear').onclick = async () => { await Music.remove(); updateTrackUI(); };
+$('lbClear').onclick = () => {
+  if (!confirm('Clear the leaderboard and best score?')) return;
+  lb = []; lastEntry = -1; best = 0; saveLb();
+  try { localStorage.removeItem(LS_BEST); } catch (e) {}
+};
+$('sClose').onclick = closeSettings;
+$('kReset').onclick = () => { S.keys = Object.assign({}, DEFAULT_KEYS); capturing = null; saveSettings(); renderKeys(); };
+
+function renderKeys() {
+  const box = $('keys'); box.innerHTML = '';
+  for (const a of Object.keys(ACTION_NAMES)) {
+    const row = document.createElement('div'); row.className = 'krow';
+    const name = document.createElement('span'); name.textContent = ACTION_NAMES[a];
+    const b = document.createElement('button');
+    if (capturing === a) { b.textContent = 'Press a key…'; b.className = 'cap'; }
+    else b.textContent = lab(S.keys[a]);
+    b.onclick = () => { capturing = a; renderKeys(); };
+    row.append(name, b); box.append(row);
+  }
+}
+
+/* ---------- rendering ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const dpr = Math.min(window.devicePixelRatio || 1, 3);
+cv.width = W * dpr; cv.height = H * dpr;
+ctx.scale(dpr, dpr);
+
+function block(x, y, s, col, a = 1) {
+  const b = Math.max(2, Math.round(s * 0.1));
+  ctx.globalAlpha = a;
+  ctx.fillStyle = col; ctx.fillRect(x, y, s, s);
+  ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.fillRect(x, y, s, b); ctx.fillRect(x, y, b, s);
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(x, y + s - b, s, b); ctx.fillRect(x + s - b, y, b, s);
+  ctx.globalAlpha = 1;
+}
+function mini(t, x, y, w, h, s, a = 1) {
+  if (!t) return;
+  const m = SH[t][0];
+  let r0 = 9, r1 = -1, c0 = 9, c1 = -1;
+  m.forEach((row, r) => row.forEach((v, c) => { if (v) { r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c); } }));
+  const pw = (c1 - c0 + 1) * s, ph = (r1 - r0 + 1) * s;
+  const ox = x + (w - pw) / 2, oy = y + (h - ph) / 2;
+  m.forEach((row, r) => row.forEach((v, c) => { if (v) block(ox + (c - c0) * s, oy + (r - r0) * s, s, COLORS[t], a); }));
+}
+function panel(x, y, w, h, label) {
+  ctx.fillStyle = '#141824'; ctx.strokeStyle = '#2a3144'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#8a93a8'; ctx.font = '600 11px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(label, x + w / 2, y + 18);
+}
+
+function draw(dt) {
+  ctx.fillStyle = '#0f1220'; ctx.fillRect(0, 0, W, H);
+
+  /* board */
+  ctx.fillStyle = '#080a12'; ctx.fillRect(BX, BY, COLS * CELL, VIS * CELL);
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1; ctx.beginPath();
+  for (let i = 0; i <= COLS; i++) { ctx.moveTo(BX + i * CELL + .5, BY); ctx.lineTo(BX + i * CELL + .5, BY + VIS * CELL); }
+  for (let j = 0; j <= VIS; j++) { ctx.moveTo(BX, BY + j * CELL + .5); ctx.lineTo(BX + COLS * CELL, BY + j * CELL + .5); }
+  ctx.stroke();
+  for (let r = HID; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = board[r][c];
+    if (t) block(BX + c * CELL, BY + (r - HID) * CELL, CELL, COLORS[t]);
+  }
+  if (cur && state !== 'paused') {
+    const m = SH[cur.t][cur.r];
+    if (S.ghost) {
+      const gy = ghostY();
+      m.forEach((row, r) => row.forEach((v, c) => {
+        const y = gy + r; if (v && y >= HID) block(BX + (cur.x + c) * CELL, BY + (y - HID) * CELL, CELL, COLORS[cur.t], 0.25);
+      }));
+    }
+    m.forEach((row, r) => row.forEach((v, c) => {
+      const y = cur.y + r; if (v && y >= HID) block(BX + (cur.x + c) * CELL, BY + (y - HID) * CELL, CELL, COLORS[cur.t]);
+    }));
+  }
+  ctx.strokeStyle = '#2a3144'; ctx.lineWidth = 2;
+  ctx.strokeRect(BX - 1, BY - 1, COLS * CELL + 2, VIS * CELL + 2);
+
+  /* hold */
+  panel(10, 20, 130, 100, 'HOLD');
+  mini(holdType, 10, 28, 130, 92, 22, holdUsed ? 0.4 : 1);
+
+  /* stats */
+  const stats = [['SCORE', score.toLocaleString()], ['LEVEL', String(level)], ['LINES', String(lines)], ['BEST', best.toLocaleString()]];
+  stats.forEach(([l, v], i) => {
+    const y = 140 + i * 62;
+    panel(10, y, 130, 52, l);
+    ctx.fillStyle = '#e8ecf5'; ctx.font = '700 20px system-ui,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(v, 75, y + 42);
+  });
+
+  /* next */
+  const n = S.next;
+  panel(460, 20, 130, 30 + n * 80, 'NEXT');
+  for (let i = 0; i < n; i++) mini(queue[i], 460, 36 + i * 80, 130, 80, 22);
+
+  /* popup */
+  if (popup) {
+    popup.t += dt;
+    const a = Math.max(0, 1 - popup.t / 1800);
+    if (a <= 0) popup = null;
+    else {
+      ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+      popup.lines.forEach((ln, i) => { ctx.font = (i === popup.lines.length - 1 ? '800 22px' : '700 15px') + ' system-ui,sans-serif'; ctx.fillText(ln, BX + COLS * CELL / 2, BY + 150 + i * 26 - (popup.t / 60)); });
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+/* ---------- main loop ---------- */
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(100, t - last); last = t;
+  if (state === 'playing') update(dt);
+  draw(dt);
+  requestAnimationFrame(frame);
+}
+
+applyTouch(); applyMute(); Music.load().then(updateTrackUI);
+fillQueue();
+showOverlay('TETRIS', '', 'Play');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
